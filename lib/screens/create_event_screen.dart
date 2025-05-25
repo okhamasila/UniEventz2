@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'event_verification_screen.dart';
+import '../utils/app_colors.dart';
 
 void main() {
   runApp(const CreateEventScreen());
@@ -13,7 +17,7 @@ class CreateEventScreen extends StatefulWidget {
   State<CreateEventScreen> createState() => _CreateEventScreenState();
 }
 
-class _CreateEventScreenState extends State<CreateEventScreen> {
+class _CreateEventScreenState extends State<CreateEventScreen> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _eventNameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -29,6 +33,21 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   DateTime? _startDateTime;
   DateTime? _endDateTime;
   String? _bannerImagePath;
+  bool _isLoading = false;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
+    _loadDraft();
+    _animationController.forward();
+  }
 
   @override
   void dispose() {
@@ -38,46 +57,174 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     _priceController.dispose();
     _maxParticipantsController.dispose();
     _registrationDeadlineController.dispose();
+    _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _eventNameController.text = prefs.getString('eventName') ?? '';
+      _descriptionController.text = prefs.getString('description') ?? '';
+      _venueController.text = prefs.getString('venue') ?? '';
+      _priceController.text = prefs.getString('price') ?? '';
+      _maxParticipantsController.text = prefs.getString('maxParticipants') ?? '';
+      _registrationDeadlineController.text = prefs.getString('registrationDeadline') ?? '';
+      _selectedCategory = prefs.getString('category');
+      _selectedFormat = prefs.getString('format');
+      _selectedTicketType = prefs.getString('ticketType');
+      _enableNotifications = prefs.getBool('notifications') ?? false;
+      _bannerImagePath = prefs.getString('bannerImage');
+      final startDate = prefs.getString('startDateTime');
+      final endDate = prefs.getString('endDateTime');
+      if (startDate != null) _startDateTime = DateTime.parse(startDate);
+      if (endDate != null) _endDateTime = DateTime.parse(endDate);
+    });
+  }
+
+  Future<void> _saveDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('eventName', _eventNameController.text);
+    await prefs.setString('description', _descriptionController.text);
+    await prefs.setString('venue', _venueController.text);
+    await prefs.setString('price', _priceController.text);
+    await prefs.setString('maxParticipants', _maxParticipantsController.text);
+    await prefs.setString('registrationDeadline', _registrationDeadlineController.text);
+    if (_selectedCategory != null) await prefs.setString('category', _selectedCategory!);
+    if (_selectedFormat != null) await prefs.setString('format', _selectedFormat!);
+    if (_selectedTicketType != null) await prefs.setString('ticketType', _selectedTicketType!);
+    await prefs.setBool('notifications', _enableNotifications);
+    if (_bannerImagePath != null) await prefs.setString('bannerImage', _bannerImagePath!);
+    if (_startDateTime != null) await prefs.setString('startDateTime', _startDateTime!.toIso8601String());
+    if (_endDateTime != null) await prefs.setString('endDateTime', _endDateTime!.toIso8601String());
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Draft saved successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color.fromARGB(255, 18, 32, 47),
-      ),
-      home: Scaffold(
-        body: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildEventNameSection(),
-                  const SizedBox(height: 24),
-                  _buildDescriptionSection(),
-                  const SizedBox(height: 24),
-                  _buildCategorySection(),
-                  const SizedBox(height: 24),
-                  _buildEventBannerSection(),
-                  const SizedBox(height: 24),
-                  _buildDateTimeSection(),
-                  const SizedBox(height: 24),
-                  _buildLocationSection(),
-                  const SizedBox(height: 24),
-                  _buildTicketingSection(),
-                  const SizedBox(height: 24),
-                  _buildAdditionalFeaturesSection(),
-                  const SizedBox(height: 24),
-                  _buildActionButtons(),
-                ],
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Create New Event',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: _saveDraft,
+            icon: const Icon(Icons.save, color: AppColors.textSecondary),
+            label: const Text(
+              'Save Draft',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildEventNameSection(),
+                    const SizedBox(height: 24),
+                    _buildDescriptionSection(),
+                    const SizedBox(height: 24),
+                    _buildCategorySection(),
+                    const SizedBox(height: 24),
+                    _buildEventBannerSection(),
+                    const SizedBox(height: 24),
+                    _buildDateTimeSection(),
+                    const SizedBox(height: 24),
+                    _buildLocationSection(),
+                    const SizedBox(height: 24),
+                    _buildTicketingSection(),
+                    const SizedBox(height: 24),
+                    _buildAdditionalFeaturesSection(),
+                    const SizedBox(height: 24),
+                    _buildActionButtons(),
+                    const SizedBox(height: 80), // Space for bottom navigation
+                  ],
+                ),
+              ),
+            ),
+            if (_isLoading)
+              Container(
+                color: AppColors.black.withOpacity(0.5),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                ),
+              ),
+          ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 1,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+              break;
+            case 2:
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/profile',
+                (route) => false,
+              );
+              break;
+          }
+        },
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: const Color(0xFFADAEBC),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle_outline),
+            activeIcon: Icon(Icons.add_circle),
+            label: 'Create',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
@@ -91,6 +238,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: TextStyle(
             color: Color(0xFF404040),
             fontSize: 14,
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -99,11 +247,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           controller: _eventNameController,
           decoration: InputDecoration(
             hintText: 'Enter event name',
-            hintStyle: const TextStyle(color: Color(0xFFADAEBC)),
+            hintStyle: const TextStyle(
+              color: Color(0xFFADAEBC),
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFFD4D4D4)),
             ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -125,6 +279,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: TextStyle(
             color: Color(0xFF404040),
             fontSize: 14,
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -134,11 +289,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           maxLines: 4,
           decoration: InputDecoration(
             hintText: 'Describe your event',
-            hintStyle: const TextStyle(color: Color(0xFFADAEBC)),
+            hintStyle: const TextStyle(
+              color: Color(0xFFADAEBC),
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFFD4D4D4)),
             ),
+            contentPadding: const EdgeInsets.all(12),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -160,6 +321,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: TextStyle(
             color: Color(0xFF404040),
             fontSize: 14,
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -218,40 +380,139 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: TextStyle(
             color: Color(0xFF404040),
             fontSize: 14,
-            fontWeight: FontWeight.w400,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 8),
-        GestureDetector(
-          onTap: _pickBannerImage,
-          child: Container(
-            height: 200,
-            decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFD4D4D4), width: 2),
-              borderRadius: BorderRadius.circular(8),
-              image: _bannerImagePath != null
-                  ? DecorationImage(
-                      image: FileImage(File(_bannerImagePath!)),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-            child: _bannerImagePath == null
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFD4D4D4)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              GestureDetector(
+                onTap: _pickBannerImage,
+                child: Container(
+                  width: double.infinity,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(7),
+                      topRight: Radius.circular(7),
+                    ),
+                    image: _bannerImagePath != null
+                        ? DecorationImage(
+                            image: FileImage(File(_bannerImagePath!)),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: _bannerImagePath == null
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(50),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.add_photo_alternate,
+                                size: 30,
+                                color: Color(0xFF404040),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Upload event cover image',
+                              style: TextStyle(
+                                color: Color(0xFF404040),
+                                fontSize: 14,
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Recommended size: 1200 x 400 pixels',
+                              style: TextStyle(
+                                color: Color(0xFFADAEBC),
+                                fontSize: 12,
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        )
+                      : null,
+                ),
+              ),
+              if (_bannerImagePath != null)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(7),
+                      bottomRight: Radius.circular(7),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.add_photo_alternate, size: 30),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Upload event cover image',
-                        style: TextStyle(
-                          color: Color(0xFF737373),
-                          fontSize: 14,
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Color(0xFF4CAF50),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Image uploaded',
+                            style: TextStyle(
+                              color: Color(0xFF404040),
+                              fontSize: 12,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      TextButton.icon(
+                        onPressed: _pickBannerImage,
+                        icon: const Icon(
+                          Icons.edit,
+                          size: 16,
+                          color: Color(0xFF404040),
+                        ),
+                        label: const Text(
+                          'Change',
+                          style: TextStyle(
+                            color: Color(0xFF404040),
+                            fontSize: 12,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
-                  )
-                : null,
+                  ),
+                ),
+            ],
           ),
         ),
       ],
@@ -267,6 +528,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -295,6 +557,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: const TextStyle(
             color: Color(0xFF404040),
             fontSize: 14,
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -324,8 +587,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             }
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
+              color: Colors.white,
               border: Border.all(color: const Color(0xFFD4D4D4)),
               borderRadius: BorderRadius.circular(8),
             ),
@@ -336,9 +600,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   date != null
                       ? '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}'
                       : 'mm/dd/yyyy --:-- --',
-                  style: const TextStyle(color: Color(0xFFADAEBC)),
+                  style: const TextStyle(
+                    color: Color(0xFFADAEBC),
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
-                const Icon(Icons.calendar_today),
+                const Icon(Icons.calendar_today, size: 24),
               ],
             ),
           ),
@@ -356,6 +625,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -399,10 +669,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           controller: _venueController,
           decoration: InputDecoration(
             hintText: 'Enter venue or meeting link',
+            hintStyle: const TextStyle(
+              color: Color(0xFFADAEBC),
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFFD4D4D4)),
             ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -424,6 +701,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
           ),
         ),
@@ -459,10 +737,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
               hintText: 'Ticket price',
+              hintStyle: const TextStyle(
+                color: Color(0xFFADAEBC),
+                fontSize: 16,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w400,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFD4D4D4)),
               ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
             validator: (value) {
               if (_selectedTicketType == 'Paid' && (value == null || value.isEmpty)) {
@@ -477,10 +762,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
             hintText: 'Maximum participants',
+            hintStyle: const TextStyle(
+              color: Color(0xFFADAEBC),
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFFD4D4D4)),
             ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -494,10 +786,17 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           controller: _registrationDeadlineController,
           decoration: InputDecoration(
             hintText: 'Registration deadline',
+            hintStyle: const TextStyle(
+              color: Color(0xFFADAEBC),
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFFD4D4D4)),
             ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             suffixIcon: const Icon(Icons.calendar_today),
           ),
           validator: (value) {
@@ -520,12 +819,21 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           style: TextStyle(
             color: Colors.black,
             fontSize: 18,
+            fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
           ),
         ),
         const SizedBox(height: 16),
         SwitchListTile(
-          title: const Text('Enable Notifications'),
+          title: const Text(
+            'Enable Notifications',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+            ),
+          ),
           value: _enableNotifications,
           onChanged: (value) {
             setState(() {
@@ -541,49 +849,136 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     return Column(
       children: [
         ElevatedButton(
-          onPressed: _previewEvent,
+          onPressed: _isLoading ? null : _previewEvent,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFF5F5F5),
-            foregroundColor: const Color(0xFF404040),
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
             minimumSize: const Size(double.infinity, 48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            disabledBackgroundColor: AppColors.primaryDark,
           ),
-          child: const Text('Preview Event'),
+          child: const Text(
+            'Preview Event',
+            style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w400,
+            ),
+          ),
         ),
         const SizedBox(height: 16),
         ElevatedButton(
-          onPressed: _createEvent,
+          onPressed: _isLoading ? null : _createEvent,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF171717),
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.white,
             minimumSize: const Size(double.infinity, 48),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            disabledBackgroundColor: AppColors.primaryDark,
           ),
-          child: const Text('Create Event'),
+          child: _isLoading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                  ),
+                )
+              : const Text(
+                  'Create Event',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
         ),
       ],
     );
   }
 
   Future<void> _pickBannerImage() async {
-    // TODO: Implement image picking
-  }
-
-  void _saveDraft() {
-    // TODO: Implement draft saving
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (image != null) {
+      setState(() {
+        _bannerImagePath = image.path;
+      });
+    }
   }
 
   void _previewEvent() {
-    // TODO: Implement event preview
+    if (_formKey.currentState!.validate()) {
+      // TODO: Implement event preview
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Preview functionality coming soon'),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    }
   }
 
-  void _createEvent() {
+  Future<void> _createEvent() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement event creation
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Check if user is verified
+        final prefs = await SharedPreferences.getInstance();
+        final isVerified = prefs.getBool('isVerified');
+
+        if (isVerified != true) {
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EventVerificationScreen(),
+              ),
+            );
+            return;
+          }
+        }
+
+        // Simulate API call
+        await Future.delayed(const Duration(seconds: 2));
+        
+        // Clear draft after successful creation
+        await prefs.clear();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Event created successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error creating event: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 }
@@ -602,7 +997,15 @@ class _CategoryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FilterChip(
-      label: Text(label),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 14,
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w400,
+        ),
+      ),
       selected: isSelected,
       onSelected: onSelected,
       backgroundColor: Colors.white,
@@ -634,7 +1037,15 @@ class _FormatRadioButton extends StatelessWidget {
           groupValue: groupValue,
           onChanged: onChanged,
         ),
-        Text(label),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 16,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w400,
+          ),
+        ),
       ],
     );
   }
@@ -662,7 +1073,15 @@ class _TicketTypeRadioButton extends StatelessWidget {
           groupValue: groupValue,
           onChanged: onChanged,
         ),
-        Text(label),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 16,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w400,
+          ),
+        ),
       ],
     );
   }

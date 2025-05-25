@@ -1,4 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'event_details_screen.dart';
+import 'list_event_screen.dart' as list_screen;
+import 'join_event_screen.dart';
+import 'my_events_screen.dart';
+import 'event_preview_screen.dart';
+import 'saved_events_screen.dart';
+import 'notification_screen.dart';
+import '../models/event.dart';
+import '../utils/app_colors.dart';
+import '../widgets/notification_badge.dart';
+import '../providers/notification_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,16 +21,27 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('UniEventz'),
-        actions: const [
-          IconButton(
-            icon: Icon(Icons.notifications_outlined),
-            onPressed: null, // TODO: Implement notifications
+        actions: [
+          Consumer<NotificationProvider>(
+            builder: (context, notificationProvider, child) {
+              return NotificationBadge(
+                count: notificationProvider.unreadCount,
+                child: IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/notifications');
+                  },
+                ),
+              );
+            },
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/create-event'),
-        child: const Icon(Icons.add),
+        onPressed: () => Navigator.pushNamed(context, '/event-verification'),
+        backgroundColor: AppColors.primary,
+        elevation: 0,
+        child: const Icon(Icons.add, color: AppColors.white),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -51,8 +74,15 @@ class _WelcomeSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +90,7 @@ class _WelcomeSection extends StatelessWidget {
           Text(
             'Welcome Back!',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.white,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -69,8 +99,9 @@ class _WelcomeSection extends StatelessWidget {
           Text(
             'Discover amazing events happening around your campus',
             style: TextStyle(
-              color: Colors.white70,
+              color: AppColors.white,
               fontSize: 16,
+              fontWeight: FontWeight.w300,
             ),
           ),
         ],
@@ -94,6 +125,7 @@ class _QuickActions extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 16),
@@ -103,12 +135,22 @@ class _QuickActions extends StatelessWidget {
             _ActionButton(
               icon: Icons.event_available_outlined,
               label: 'Join Event',
-              onTap: () => Navigator.pushNamed(context, '/events'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const JoinEventScreen(),
+                ),
+              ),
             ),
             _ActionButton(
               icon: Icons.bookmark_outline,
               label: 'Saved',
-              onTap: () {}, // TODO: Implement saved events
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SavedEventsScreen(),
+                ),
+              ),
             ),
           ],
         ),
@@ -130,22 +172,41 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primaryLight.withOpacity(0.3),
+                  AppColors.secondaryLight.withOpacity(0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.2),
+                width: 1,
+              ),
             ),
-            child: Icon(icon, size: 28),
+            child: Icon(
+              icon, 
+              size: 28,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -159,19 +220,19 @@ class _FeaturedEvents extends StatelessWidget {
     _EventData(
       title: 'Tech Summit 2024',
       date: 'Mar 20, 2024',
-      color: Colors.blue[100]!,
+      color: AppColors.primaryLight.withOpacity(0.3),
       icon: Icons.computer,
     ),
     _EventData(
       title: 'Spring Festival',
       date: 'Apr 15, 2024',
-      color: Colors.green[100]!,
+      color: AppColors.secondaryLight.withOpacity(0.3),
       icon: Icons.local_florist,
     ),
     _EventData(
       title: 'Job Fair',
       date: 'May 1, 2024',
-      color: Colors.orange[100]!,
+      color: AppColors.tertiaryLight.withOpacity(0.3),
       icon: Icons.work,
     ),
   ];
@@ -188,6 +249,7 @@ class _FeaturedEvents extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 16),
@@ -245,75 +307,71 @@ class _FeaturedEventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
-      child: Card(
-        elevation: 2, // Reduced elevation
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () {
+        print("Featured card tapped: $title"); // Debug print
+        // Create a sample event for demo purposes
+        final sampleEvent = Event(
+          id: '123',
+          title: title,
+          description: 'Sample event description for $title.',
+          imageUrl: 'https://picsum.photos/200/200?random=1',
+          date: DateTime.now().add(const Duration(days: 15)),
+          location: 'University Campus',
+          price: 'Rp 50.000',
+          registeredCount: 75,
+          category: 'Sample Category',
+        );
+        
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EventDetailsScreen(event: sampleEvent),
+          ),
+        );
+      },
+      child: Container(
+        width: 280,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              backgroundColor,
+              backgroundColor.withOpacity(0.7),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.2),
+            width: 1,
+          ),
         ),
-        child: InkWell(
-          onTap: () {
-            Navigator.pushNamed(
-              context,
-              '/register-event',
-              arguments: {
-                'eventId': '123',
-                'eventTitle': title,
-                'eventDate': date,
-                'eventLocation': 'Campus Center',
-                'eventPrice': 'Free',
-                'eventOrganizer': 'University',
-              },
-            );
-          },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    eventIcon,
-                    size: 48,
-                    color: backgroundColor.withBlue(backgroundColor.blue + 50),
-                  ),
+              Icon(
+                eventIcon, 
+                size: 40,
+                color: AppColors.primary,
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.calendar_today, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          date,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+              const SizedBox(height: 4),
+              Text(
+                date,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -364,6 +422,7 @@ class _PopularCategories extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 16),
@@ -411,19 +470,54 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 16,
+    return GestureDetector(
+      onTap: () {
+        print("Category tapped: $label"); // Debug print
+        // Navigate to the events list with category filter
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => list_screen.ListEventScreen(
+              initialCategory: label,
+            ),
           ),
-          const SizedBox(width: 4),
-          Text(label),
-        ],
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primaryLight.withOpacity(0.2),
+              AppColors.secondaryLight.withOpacity(0.2),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
-      backgroundColor: Colors.grey[100],
     );
   }
 }
@@ -433,13 +527,13 @@ class _MyEvents extends StatelessWidget {
     _EventData(
       title: 'Coding Workshop',
       date: 'Mar 25, 2024',
-      color: Colors.purple[100]!,
+      color: AppColors.accentLight.withOpacity(0.3),
       icon: Icons.code,
     ),
     _EventData(
       title: 'Study Group',
       date: 'Mar 28, 2024',
-      color: Colors.teal[100]!,
+      color: AppColors.tertiaryLight.withOpacity(0.3),
       icon: Icons.group,
     ),
   ];
@@ -459,13 +553,20 @@ class _MyEvents extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
             ),
             TextButton(
               onPressed: () {
-                // TODO: Navigate to all my events
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MyEventsScreen()),
+                );
               },
-              child: const Text('See All'),
+              child: const Text(
+                'See All',
+                style: TextStyle(color: AppColors.primary),
+              ),
             ),
           ],
         ),
@@ -507,23 +608,64 @@ class _MyEventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(
-            context,
-            '/event-details',
-            arguments: {
-              'eventId': '123',
-              'eventTitle': title,
-              'eventDate': date,
-            },
-          );
-        },
+    // Create the sample event outside the widget build to avoid recreation
+    // Match event data with the ones defined in MyEventsScreen
+    Event sampleEvent;
+    
+    if (title == 'Coding Workshop') {
+      sampleEvent = Event(
+        id: '1', // Match the ID in MyEventsScreen
+        title: title,
+        description: 'Learn the basics of Flutter development in this hands-on workshop.',
+        imageUrl: 'https://picsum.photos/200/200?random=1',
+        date: DateTime.now().add(const Duration(days: 5)),
+        location: 'Engineering Building, Room 101',
+        price: 'Rp 25.000',
+        registeredCount: 15,
+        category: 'Technology',
+      );
+    } else if (title == 'Study Group') {
+      sampleEvent = Event(
+        id: '2', // Match the ID in MyEventsScreen
+        title: title,
+        description: 'Join our weekly study group to prepare for midterm exams.',
+        imageUrl: 'https://picsum.photos/200/200?random=2',
+        date: DateTime.now().add(const Duration(days: 8)),
+        location: 'Library, Study Room 3',
+        price: 'Free',
+        registeredCount: 8,
+        category: 'Education',
+      );
+    } else {
+      // Default case
+      sampleEvent = Event(
+        id: '123',
+        title: title,
+        description: 'Sample event description for $title.',
+        imageUrl: 'https://picsum.photos/200/200?random=1',
+        date: DateTime.now().add(const Duration(days: 15)),
+        location: 'University Campus',
+        price: 'Rp 50.000',
+        registeredCount: 75,
+        category: 'Sample Category',
+      );
+    }
+    
+    return GestureDetector(
+      onTap: () {
+        print("Card tapped: $title"); // Debug print
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EventPreviewScreen(event: sampleEvent),
+          ),
+        );
+      },
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        color: AppColors.surface,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -531,13 +673,20 @@ class _MyEventCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: backgroundColor,
+                  gradient: LinearGradient(
+                    colors: [
+                      backgroundColor,
+                      backgroundColor.withOpacity(0.7),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   eventIcon,
                   size: 24,
-                  color: backgroundColor.withBlue(backgroundColor.blue + 50),
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(width: 16),
@@ -550,18 +699,23 @@ class _MyEventCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.calendar_today, size: 14),
+                        const Icon(
+                          Icons.calendar_today, 
+                          size: 14,
+                          color: AppColors.textSecondary,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           date,
                           style: const TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -569,7 +723,11 @@ class _MyEventCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              const Icon(
+                Icons.arrow_forward_ios, 
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
             ],
           ),
         ),

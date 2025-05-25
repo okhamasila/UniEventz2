@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_colors.dart';
 
 class RegisterEventScreen extends StatefulWidget {
   final String eventId;
@@ -23,101 +24,331 @@ class RegisterEventScreen extends StatefulWidget {
 }
 
 class _RegisterEventScreenState extends State<RegisterEventScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _organizationController = TextEditingController();
-  final _promoCodeController = TextEditingController();
-  final _notesController = TextEditingController();
-
-  int _ticketCount = 1;
-  String? _selectedPaymentMethod;
-  bool _termsAccepted = false;
-
-  @override
-  void dispose() {
-    _fullNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _organizationController.dispose();
-    _promoCodeController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
+  String _selectedPaymentMethod = 'bank';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Event Registration'),
+        title: const Text('Register for Event', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildEventInfoSection(),
-              _buildRegistrationForm(),
-              _buildPaymentSection(),
-              _buildTermsAndActions(),
-            ],
-          ),
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-    );
-  }
-
-  Widget _buildEventInfoSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E5E5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 160,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE5E5E5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                'Event Banner',
-                style: TextStyle(
-                  color: const Color(0xFF808080),
-                  fontSize: 16,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Event Banner
+            Container(
+              height: 200,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.image,
+                  size: 50,
+                  color: AppColors.textTertiary,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            widget.eventTitle,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w400,
+            const SizedBox(height: 24),
+            // Event Title
+            Text(
+              widget.eventTitle,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildInfoRow(Icons.person, widget.eventOrganizer),
-          _buildInfoRow(Icons.calendar_today, widget.eventDate),
-          _buildInfoRow(Icons.location_on, widget.eventLocation),
-          _buildInfoRow(Icons.attach_money, widget.eventPrice),
-        ],
+            const SizedBox(height: 16),
+            // Event Details
+            _buildInfoRow(Icons.person, widget.eventOrganizer),
+            _buildInfoRow(Icons.calendar_today, widget.eventDate),
+            _buildInfoRow(Icons.location_on, widget.eventLocation),
+            _buildInfoRow(Icons.attach_money, widget.eventPrice),
+            const SizedBox(height: 16),
+            // Registration Form
+            const Text(
+              'Personal Information',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Full Name',
+                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: AppColors.surfaceVariant,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Email',
+                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: AppColors.surfaceVariant,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              decoration: InputDecoration(
+                labelText: 'Phone Number',
+                labelStyle: const TextStyle(color: AppColors.textSecondary),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: AppColors.surfaceVariant,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Ticket Information',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.1),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Regular Ticket',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        widget.eventPrice,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Payment Method',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.1),
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    title: const Row(
+                      children: [
+                        Icon(Icons.account_balance, color: AppColors.primary),
+                        SizedBox(width: 8),
+                        Text('Bank Transfer', style: TextStyle(color: AppColors.textPrimary)),
+                      ],
+                    ),
+                    value: 'bank',
+                    groupValue: _selectedPaymentMethod,
+                    activeColor: AppColors.primary,
+                    onChanged: (String? value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedPaymentMethod = value;
+                        });
+                      }
+                    },
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                  ),
+                  const Divider(height: 1, color: AppColors.grey),
+                  RadioListTile<String>(
+                    title: const Row(
+                      children: [
+                        Icon(Icons.credit_card, color: AppColors.primary),
+                        SizedBox(width: 8),
+                        Text('Credit Card', style: TextStyle(color: AppColors.textPrimary)),
+                      ],
+                    ),
+                    value: 'credit',
+                    groupValue: _selectedPaymentMethod,
+                    activeColor: AppColors.primary,
+                    onChanged: (String? value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedPaymentMethod = value;
+                        });
+                      }
+                    },
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                  ),
+                  const Divider(height: 1, color: AppColors.grey),
+                  RadioListTile<String>(
+                    title: const Row(
+                      children: [
+                        Icon(Icons.account_balance_wallet, color: AppColors.primary),
+                        SizedBox(width: 8),
+                        Text('E-Wallet', style: TextStyle(color: AppColors.textPrimary)),
+                      ],
+                    ),
+                    value: 'ewallet',
+                    groupValue: _selectedPaymentMethod,
+                    activeColor: AppColors.primary,
+                    onChanged: (String? value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedPaymentMethod = value;
+                        });
+                      }
+                    },
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            // Complete Registration Button
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () {
+                  // Show loading indicator
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      );
+                    },
+                  );
+                  
+                  // Simulate payment processing
+                  Future.delayed(const Duration(seconds: 2), () {
+                    // Close loading dialog
+                    Navigator.of(context).pop();
+                    
+                    // Show success dialog
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          backgroundColor: AppColors.surface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          title: const Row(
+                            children: [
+                              Icon(Icons.check_circle, color: AppColors.success, size: 28),
+                              SizedBox(width: 8),
+                              Text('Sukses', style: TextStyle(color: AppColors.textPrimary)),
+                            ],
+                          ),
+                          content: const Text('Berhasil melakukan pembayaran', style: TextStyle(color: AppColors.textSecondary)),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close dialog
+                                Navigator.of(context).pop(); // Return to event details
+                              },
+                              child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textOnPrimary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Complete Registration',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -127,384 +358,18 @@ class _RegisterEventScreenState extends State<RegisterEventScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 14),
+          Icon(icon, size: 14, color: AppColors.primary),
           const SizedBox(width: 8),
           Text(
             text,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w400,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildRegistrationForm() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E5E5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildTextField(
-            label: 'Full Name',
-            controller: _fullNameController,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your full name';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: 'Email Address',
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your email';
-              }
-              if (!value.contains('@')) {
-                return 'Please enter a valid email';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: 'Phone Number',
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your phone number';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: 'University/Organization',
-            controller: _organizationController,
-            hintText: 'Optional',
-          ),
-          const SizedBox(height: 16),
-          _buildTicketCounter(),
-          const SizedBox(height: 16),
-          _buildTextField(
-            label: 'Additional Notes',
-            controller: _notesController,
-            maxLines: 4,
-            hintText: 'Optional',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required String label,
-    required TextEditingController controller,
-    String? hintText,
-    TextInputType? keyboardType,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hintText ?? 'Enter your $label',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFD4D4D4)),
-            ),
-          ),
-          validator: validator,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTicketCounter() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Number of Tickets',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 48,
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFD4D4D4)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: () {
-                  if (_ticketCount > 1) {
-                    setState(() {
-                      _ticketCount--;
-                    });
-                  }
-                },
-              ),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    _ticketCount.toString(),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () {
-                  setState(() {
-                    _ticketCount++;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPaymentSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFE5E5E5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Payment Method',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildPaymentOption(
-            'Credit/Debit Card',
-            isSelected: _selectedPaymentMethod == 'card',
-            onSelected: () {
-              setState(() {
-                _selectedPaymentMethod = 'card';
-              });
-            },
-          ),
-          _buildPaymentOption(
-            'e-Wallet',
-            isSelected: _selectedPaymentMethod == 'wallet',
-            onSelected: () {
-              setState(() {
-                _selectedPaymentMethod = 'wallet';
-              });
-            },
-          ),
-          _buildPaymentOption(
-            'Bank Transfer',
-            isSelected: _selectedPaymentMethod == 'bank',
-            onSelected: () {
-              setState(() {
-                _selectedPaymentMethod = 'bank';
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _promoCodeController,
-                  decoration: InputDecoration(
-                    hintText: 'Promo Code',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Color(0xFFD4D4D4)),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () {
-                  // TODO: Implement promo code validation
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF262626),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(75, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Apply'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total Amount:',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              Text(
-                (() {
-                  if (widget.eventPrice.toLowerCase() == 'free') {
-                    return 'Free';
-                  }
-                  final priceStr = widget.eventPrice.replaceAll('Rp', '').trim();
-                  print('Original price: ${widget.eventPrice}');
-                  print('After removing Rp: $priceStr');
-                  final numericStr = priceStr.replaceAll(RegExp(r'[^0-9]'), '');
-                  print('Numeric only: $numericStr');
-                  if (numericStr.isEmpty) return 'Free';
-                  final amount = int.parse(numericStr);
-                  final total = amount * _ticketCount;
-                  return 'Rp ${total.toString().replaceAllMapped(
-                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                    (Match m) => '${m[1]}.'
-                  )}';
-                })(),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentOption(String label, {required bool isSelected, required VoidCallback onSelected}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        onTap: onSelected,
-        child: Container(
-          height: 50,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: isSelected ? const Color(0xFF171717) : const Color(0xFFD4D4D4),
-            ),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Radio<String>(
-                value: label.toLowerCase(),
-                groupValue: _selectedPaymentMethod,
-                onChanged: (value) => onSelected(),
-              ),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTermsAndActions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Checkbox(
-                value: _termsAccepted,
-                onChanged: (value) {
-                  setState(() {
-                    _termsAccepted = value ?? false;
-                  });
-                },
-              ),
-              const Expanded(
-                child: Text(
-                  'I agree to the terms & conditions and privacy policy',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _termsAccepted ? _confirmRegistration : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF171717),
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('Confirm Registration'),
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmRegistration() {
-    if (_formKey.currentState!.validate() && _selectedPaymentMethod != null) {
-      // TODO: Implement registration confirmation
-      Navigator.pop(context);
-    }
   }
 }

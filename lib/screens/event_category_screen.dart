@@ -1,23 +1,5 @@
 import 'package:flutter/material.dart';
-
-// Event model
-class Event {
-  final String id;
-  final String title;
-  final String description;
-  final String imageUrl;
-  final DateTime date;
-  final String location;
-
-  Event({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.imageUrl,
-    required this.date,
-    required this.location,
-  });
-}
+import '../models/event.dart';
 
 class EventCategoryScreen extends StatefulWidget {
   final String category;
@@ -53,6 +35,9 @@ class _EventCategoryScreenState extends State<EventCategoryScreen> {
       imageUrl: 'https://picsum.photos/200/200?random=$index',
       date: DateTime.now().add(Duration(days: index)),
       location: 'Location ${index + 1}',
+      price: 'Rp ${(index + 1) * 25000}',
+      registeredCount: (index + 1) * 10,
+      category: widget.category,
     ));
 
     setState(() {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/app_colors.dart';
 
 void main() {
   runApp(const FigmaToCodeApp());
@@ -427,7 +428,7 @@ class ReviewPage extends StatelessWidget {
                                                                 width: 28,
                                                                 height: 17,
                                                                 child: Text(
-                                                                  '5 ★',
+                                                                  '5 star',
                                                                   style: TextStyle(
                                                                     color: Colors.black,
                                                                     fontSize: 14,
@@ -516,7 +517,7 @@ class ReviewPage extends StatelessWidget {
                                                                 width: 28,
                                                                 height: 17,
                                                                 child: Text(
-                                                                  '4 ★',
+                                                                  '4 star',
                                                                   style: TextStyle(
                                                                     color: Colors.black,
                                                                     fontSize: 14,
@@ -1289,7 +1290,7 @@ class ReviewPage extends StatelessWidget {
                                                 width: 358,
                                                 height: 48,
                                                 decoration: ShapeDecoration(
-                                                  color: const Color(0xFF171717),
+                                                  color: AppColors.primary,
                                                   shape: RoundedRectangleBorder(
                                                     side: BorderSide(color: const Color(0xFFE5E7EB)),
                                                     borderRadius: BorderRadius.circular(8),
